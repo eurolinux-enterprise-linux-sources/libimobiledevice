@@ -1,0 +1,69 @@
+About
+=====
+
+A library to communicate with services running on Apple iPhone/iPod Touch
+devices.
+
+Requirements
+============
+
+Development Packages of:
+	libgnutls
+	libgcrypt
+	libusb
+	libfuse (and the associated kernel modules)
+	glib2.0
+	libplist
+	libusbmuxd (within usbmuxd package, see below)
+
+Software:
+	usbmuxd (git clone git://git.marcansoft.com/usbmuxd.git)
+	make
+	autoheader
+	automake
+	autoconf
+	libtool
+	gcc
+
+Installation
+============
+
+To compile run:
+	./autogen.sh
+	./configure
+	make
+	sudo make install
+
+On Ubuntu/Debian, you can do:
+	sudo apt-get install build-essential automake autoconf libtool\
+          libgnutls-dev libusb-dev libfuse-dev libglib2.0-dev libxml2-dev \
+          libreadline5-dev
+
+Who/What/Where?
+===============
+
+Home:
+	http://www.libimobiledevice.org/
+
+Wiki:
+	http://matt.colyer.name/projects/iphone-linux/
+
+Code:
+	git clone git://github.com/MattColyer/libiphone.git
+
+Tickets:
+	http://libiphone.lighthouseapp.com/
+
+Mailing List:
+	http://lists.mattcolyer.com/listinfo.cgi/iphone-linux-dev-mattcolyer.com
+
+Credits
+=======
+
+Apple, iPhone, iPod, and iPod Touch are trademarks of Apple Inc.
+libimobiledevice is an independent software library and has not been
+authorized, sponsored, or otherwise approved by Apple Inc.
+
+README Updated on:
+	2010-01-28
+
