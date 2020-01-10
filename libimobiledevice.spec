@@ -2,7 +2,7 @@
 
 Name:          libimobiledevice
 Version:       1.1.5
-Release:       4%{?dist}
+Release:       6%{?dist}
 Summary:       Library for connecting to mobile devices
 
 Group:         System Environment/Libraries
@@ -87,6 +87,12 @@ find %{buildroot} -name '*.la' -exec rm -f {} ';'
 %{python_sitearch}/imobiledevice*
 
 %changelog
+* Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 1.1.5-6
+- Mass rebuild 2014-01-24
+
+* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 1.1.5-5
+- Mass rebuild 2013-12-27
+
 * Tue Nov 05 2013 Bastien Nocera <bnocera@redhat.com> 1.1.5-4
 - Re-enable RPM-wide CFLAGS (regression in 1.1.5-2)
 Resolves: #884524
