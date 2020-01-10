@@ -8,15 +8,15 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #ifndef __DEVICE_H
@@ -33,8 +33,17 @@
 #include <gnutls/x509.h>
 #endif
 
-#include "userpref.h"
+#ifdef WIN32
+#define LIBIMOBILEDEVICE_API __declspec( dllexport )
+#else
+#ifdef HAVE_FVISIBILITY
+#define LIBIMOBILEDEVICE_API __attribute__((visibility("default")))
+#else
+#define LIBIMOBILEDEVICE_API
+#endif
+#endif
 
+#include "common/userpref.h"
 #include "libimobiledevice/libimobiledevice.h"
 
 enum connection_type {
@@ -45,7 +54,6 @@ struct ssl_data_private {
 #ifdef HAVE_OPENSSL
 	SSL *session;
 	SSL_CTX *ctx;
-	BIO *bio;
 #else
 	gnutls_certificate_credentials_t certificate;
 	gnutls_session_t session;
@@ -58,6 +66,7 @@ struct ssl_data_private {
 typedef struct ssl_data_private *ssl_data_t;
 
 struct idevice_connection_private {
+	char *udid;
 	enum connection_type type;
 	void *data;
 	ssl_data_t ssl_data;
@@ -68,8 +77,5 @@ struct idevice_private {
 	enum connection_type conn_type;
 	void *conn_data;
 };
-
-idevice_error_t idevice_connection_enable_ssl(idevice_connection_t connection);
-idevice_error_t idevice_connection_disable_ssl(idevice_connection_t connection);
 
 #endif

@@ -9,15 +9,15 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,11 +32,12 @@
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <libimobiledevice/misagent.h>
+#include "common/utils.h"
 
 static void print_usage(int argc, char **argv)
 {
 	char *name = NULL;
-	
+
 	name = strrchr(argv[0], '/');
 	printf("Usage: %s [OPTIONS] COMMAND\n", (name ? name + 1: argv[0]));
 	printf("Manage provisioning profiles on a device.\n\n");
@@ -47,12 +48,16 @@ static void print_usage(int argc, char **argv)
 	printf("  copy PATH\tRetrieves all provisioning profiles from the device and\n");
 	printf("           \tstores them into the existing directory specified by PATH.\n");
 	printf("           \tThe files will be stored as UUID.mobileprovision\n");
-	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n\n");
+	printf("  remove UUID\tRemoves the provisioning profile identified by UUID.\n");
+	printf("  dump FILE\tPrints detailed information about the provisioning profile\n");
+	printf("           \tspecified by FILE.\n\n");
 	printf(" The following OPTIONS are accepted:\n");
 	printf("  -d, --debug      enable communication debugging\n");
 	printf("  -u, --udid UDID  target specific device by its 40-digit device UDID\n");
+	printf("  -x, --xml        print XML output when using the 'dump' command\n");
 	printf("  -h, --help       prints usage information\n");
 	printf("\n");
+	printf("Homepage: <http://libimobiledevice.org>\n");
 }
 
 enum {
@@ -60,6 +65,7 @@ enum {
 	OP_LIST,
 	OP_COPY,
 	OP_REMOVE,
+	OP_DUMP,
 	NUM_OPS
 };
 
@@ -190,14 +196,62 @@ static plist_t profile_get_embedded_plist(plist_t profile)
 	return pl;
 }
 
+static int profile_read_from_file(const char* path, unsigned char **profile_data, unsigned int *profile_size)
+{
+	FILE* f = fopen(path, "rb");
+	if (!f) {
+		fprintf(stderr, "Could not open file '%s'\n", path);
+		return -1;
+	}
+	fseek(f, 0, SEEK_END);
+	long int size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	if (size >= 0x1000000) {
+		fprintf(stderr, "The file '%s' is too large for processing.\n", path);
+		fclose(f);
+		return -1;
+	}
+
+	unsigned char* buf = malloc(size);
+	if (!buf) {
+		fprintf(stderr, "Could not allocate memory...\n");
+		fclose(f);
+		return -1;
+	}
+
+	long int cur = 0;
+	while (cur < size) {
+		ssize_t r = fread(buf+cur, 1, 512, f);
+		if (r <= 0) {
+			break;
+		}
+		cur += r;
+	}
+	fclose(f);
+
+	if (cur != size) {
+		free(buf);
+		fprintf(stderr, "Could not read in file '%s' (size %ld read %ld)\n", path, size, cur);
+		return -1;
+	}
+
+	*profile_data = buf;
+	*profile_size = (unsigned int)size;
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	lockdownd_client_t client = NULL;
+	lockdownd_error_t ldret = LOCKDOWN_E_UNKNOWN_ERROR;
 	lockdownd_service_descriptor_t service = NULL;
 	idevice_t device = NULL;
 	idevice_error_t ret = IDEVICE_E_UNKNOWN_ERROR;
 	int i;
 	int op = -1;
+	int output_xml = 0;
 	const char* udid = NULL;
 	const char* param = NULL;
 
@@ -249,6 +303,20 @@ int main(int argc, char *argv[])
 			op = OP_REMOVE;
 			continue;
 		}
+		else if (!strcmp(argv[i], "dump")) {
+			i++;
+			if (!argv[i] || (strlen(argv[i]) < 1)) {
+				print_usage(argc, argv);
+				return 0;
+			}
+			param = argv[i];
+			op = OP_DUMP;
+			continue;
+		}
+		else if (!strcmp(argv[i], "-x") || !strcmp(argv[i], "--xml")) {
+			output_xml = 1;
+			continue;
+		}
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			print_usage(argc, argv);
 			return 0;
@@ -264,6 +332,43 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	if (op == OP_DUMP) {
+		int res = 0;
+		unsigned char* profile_data = NULL;
+		unsigned int profile_size = 0;
+		if (profile_read_from_file(param, &profile_data, &profile_size) != 0) {
+			return -1;
+		}
+		plist_t pdata = plist_new_data((char*)profile_data, profile_size);
+		plist_t pl = profile_get_embedded_plist(pdata);
+		plist_free(pdata);
+		free(profile_data);
+
+		if (pl) {
+			if (output_xml) {
+				char* xml = NULL;
+				uint32_t xlen = 0;
+				plist_to_xml(pl, &xml, &xlen);
+				if (xml) {
+					printf("%s\n", xml);
+					free(xml);
+				}
+			} else {
+				if (pl && (plist_get_node_type(pl) == PLIST_DICT)) {
+					plist_print_to_stream(pl, stdout);
+				} else {
+					fprintf(stderr, "ERROR: unexpected node type in profile plist (not PLIST_DICT)\n");
+					res = -1;
+				}
+			}
+		} else {
+			fprintf(stderr, "ERROR: could not extract embedded plist from profile!\n");
+		}
+		plist_free(pl);
+
+		return res;
+	}
+
 	ret = idevice_new(&device, udid);
 	if (ret != IDEVICE_E_SUCCESS) {
 		if (udid) {
@@ -274,7 +379,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (LOCKDOWN_E_SUCCESS != lockdownd_client_new_with_handshake(device, &client, "ideviceprovision")) {
+	if (LOCKDOWN_E_SUCCESS != (ldret = lockdownd_client_new_with_handshake(device, &client, "ideviceprovision"))) {
+		fprintf(stderr, "ERROR: Could not connect to lockdownd, error code %d\n", ldret);
 		idevice_free(device);
 		return -1;
 	}
@@ -304,46 +410,15 @@ int main(int argc, char *argv[])
 	switch (op) {
 		case OP_INSTALL:
 		{
-			FILE* f = fopen(param, "rb");
-			if (!f) {
-				fprintf(stderr, "Could not open file '%s'\n", param);
-				break;
-			}
-			fseek(f, 0, SEEK_END);
-			long int size = ftell(f);
-			fseek(f, 0, SEEK_SET);
-
-			if (size >= 0x1000000) {
-				fprintf(stderr, "The file '%s' is too large for processing.\n", param);
-				fclose(f);
+			unsigned char* profile_data = NULL;
+			unsigned int profile_size = 0;
+			if (profile_read_from_file(param, &profile_data, &profile_size) != 0) {
 				break;
 			}
 
-			char* buf = malloc(size);
-			if (!buf) {
-				fprintf(stderr, "Could not allocate memory...\n");
-				fclose(f);
-				break;
-			}
-
-			long int cur = 0;
-			while (cur < size) {
-				ssize_t r = fread(buf+cur, 1, 512, f);
-				if (r <= 0) {
-					break;
-				}
-				cur += r;
-			}
-			fclose(f);
-
-			if (cur != size) {
-				free(buf);
-				fprintf(stderr, "Could not read in file '%s' (size %ld read %ld)\n", param, size, cur);
-				break;
-			}
-
-			uint64_t psize = size;
-			plist_t pdata = plist_new_data(buf, psize);
+			uint64_t psize = profile_size;
+			plist_t pdata = plist_new_data((const char*)profile_data, psize);
+			free(profile_data);
 
 			if (misagent_install(mis, pdata) == MISAGENT_E_SUCCESS) {
 				printf("Profile '%s' installed successfully.\n", param);
@@ -351,7 +426,6 @@ int main(int argc, char *argv[])
 				int sc = misagent_get_status_code(mis);
 				fprintf(stderr, "Could not install profile '%s', status code: 0x%x\n", param, sc);
 			}
-			free(buf);
 		}
 			break;
 		case OP_LIST:

@@ -1,27 +1,29 @@
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-
 Name:          libimobiledevice
-Version:       1.1.5
-Release:       6%{?dist}
+Version:       1.2.0
+Release:       1%{?dist}
 Summary:       Library for connecting to mobile devices
 
 Group:         System Environment/Libraries
 License:       LGPLv2+
 URL:           http://www.libimobiledevice.org/
 Source0:       http://www.libimobiledevice.org/downloads/%{name}-%{version}.tar.bz2
+Patch1:        0001-Fix-installation_proxy-when-using-GnuTLS-instead-of-.patch
+Patch2:        CVE-2016-5104.patch
+Patch3:        0001-Add-new-function-to-get-the-underlying-file-descript.patch
+Patch4:        0001-Updated-gnutls-certificate-callback-to-new-API-backw.patch
+Patch5:        0001-Fix-SSL-version-negotiation-for-newer-versions-of-Op.patch
+Patch6:        0001-idevice-Update-GnuTLS-code-to-support-iOS-10.patch
+Patch7:        0001-userpref-GnuTLS-Fix-pairing-record-generation-and-im.patch
 
-BuildRequires: libgcrypt-devel
-BuildRequires: libxml2-devel
-BuildRequires: libusbx-devel
-BuildRequires: libtasn1-devel
-BuildRequires: libplist-devel
 BuildRequires: glib2-devel
 BuildRequires: gnutls-devel
-BuildRequires: readline-devel
-BuildRequires: usbmuxd-devel
-BuildRequires: python-devel
-BuildRequires: Cython
-BuildRequires: swig
+BuildRequires: libgcrypt-devel
+BuildRequires: libplist-devel
+BuildRequires: libplist-python
+BuildRequires: libtasn1-devel
+BuildRequires: libusbmuxd-devel
+BuildRequires: libusbx-devel
+BuildRequires: libxml2-devel
 
 %description
 libimobiledevice is a library for connecting to mobile devices including phones 
@@ -35,6 +37,14 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description devel
 Files for development with libimobiledevice.
 
+%package utils
+Summary: Utilites for libimobiledevice
+Group: Applications/System
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description utils
+Utilites for use with libimobiledevice.
+
 %package python
 Summary: Python bindings for libimobiledevice
 Group: Development/Libraries
@@ -45,13 +55,19 @@ Python bindings for libimobiledevice.
 
 %prep
 %setup -q
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
 
 # Fix dir permissions on html docs
 chmod +x docs/html
 
 %build
-export CFLAGS="${RPM_OPT_FLAGS} -fno-strict-aliasing"
-%configure --disable-static --disable-openssl --enable-dev-tools
+%configure --disable-static --disable-openssl --enable-dev-tools --without-cython
 # Remove rpath as per https://fedoraproject.org/wiki/Packaging/Guidelines#Beware_of_Rpath
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
@@ -62,31 +78,38 @@ make %{?_smp_mflags} V=1
 make install DESTDIR=%{buildroot}
 
 #Remove libtool archives.
-find %{buildroot} -name '*.la' -exec rm -f {} ';'
+find %{buildroot} -type f -name "*.la" -delete
 
 %post -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root,-)
-%doc AUTHORS COPYING.LESSER README
+%{!?_licensedir:%global license %%doc}
+%license COPYING.LESSER
+%doc AUTHORS README
+%{_libdir}/libimobiledevice.so.6*
+
+%files utils
 %doc %{_datadir}/man/man1/idevice*
 %{_bindir}/idevice*
-%{_libdir}/libimobiledevice.so.*
 
 %files devel
-%defattr(-,root,root,-)
 %doc docs/html/
 %{_libdir}/pkgconfig/libimobiledevice-1.0.pc
 %{_libdir}/libimobiledevice.so
 %{_includedir}/libimobiledevice/
 
 %files python
-%defattr(-,root,root,-)
-%{python_sitearch}/imobiledevice*
+#%{python_sitearch}/imobiledevice*
 
 %changelog
+* Wed Mar 01 2017 Bastien Nocera <bnocera@redhat.com> - 1.2.0-1
++ libimobiledevice-1.2.0-1
+- Rebase to 1.2.0
+- Fix iOS trust issues
+Resolves: #1387253
+
 * Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 1.1.5-6
 - Mass rebuild 2014-01-24
 

@@ -38,6 +38,8 @@ cdef class iDeviceEvent:
 cdef class iDeviceConnection(Base):
     cdef idevice_connection_t _c_connection
 
+    cpdef bytes receive_timeout(self, uint32_t max_len, unsigned int timeout)
+    cpdef bytes receive(self, max_len)
     cpdef disconnect(self)
 
 cdef class iDevice(Base):
@@ -76,7 +78,7 @@ cdef class LockdownError(BaseError): pass
 cdef class LockdownPairRecord:
     cdef lockdownd_pair_record_t _c_record
 
-cdef class LockdownServiceDescriptor:
+cdef class LockdownServiceDescriptor(Base):
     cdef lockdownd_service_descriptor_t _c_service_descriptor
 
 cdef class LockdownClient(PropertyListService):

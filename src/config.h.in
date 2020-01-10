@@ -3,7 +3,7 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* define if asprintf is available */
+/* Define to 1 if you have the `asprintf' function. */
 #undef HAVE_ASPRINTF
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
@@ -11,6 +11,9 @@
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
+
+/* Define if compiled with -fvisibility=hidden */
+#undef HAVE_FVISIBILITY
 
 /* Define to 1 if you have the <gcrypt.h> header file. */
 #undef HAVE_GCRYPT_H
@@ -24,14 +27,14 @@
 /* Define if you have OpenSSL support */
 #undef HAVE_OPENSSL
 
-/* Define to 1 if you have the <readline/readline.h> header file. */
-#undef HAVE_READLINE_READLINE_H
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the `stpcpy' function. */
+#undef HAVE_STPCPY
 
 /* Define to 1 if you have the `strcasecmp' function. */
 #undef HAVE_STRCASECMP
@@ -60,7 +63,7 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* define if vasprintf is available */
+/* Define to 1 if you have the `vasprintf' function. */
 #undef HAVE_VASPRINTF
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.

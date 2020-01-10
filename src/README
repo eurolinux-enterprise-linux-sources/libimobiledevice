@@ -19,6 +19,7 @@ Software:
 	automake
 	autoconf
 	libtool
+	pkg-config
 	gcc
 
 Optional:
@@ -29,7 +30,7 @@ Installation
 ============
 
 To compile run:
-	./configure
+	./autogen.sh
 	make
 	sudo make install
 
@@ -40,13 +41,22 @@ Home:
 	http://www.libimobiledevice.org/
 
 Code:
-	git clone http://git.sukimashita.com/libimobiledevice.git
+	git clone http://git.libimobiledevice.org/libimobiledevice.git
+
+Code (Mirror):
+	git clone https://github.com/libimobiledevice/libimobiledevice.git
 
 Tickets:
-	http://libiphone.lighthouseapp.com/
+	http://github.com/libimobiledevice/libimobiledevice/issues
 
 Mailing List:
 	http://lists.libimobiledevice.org/mailman/listinfo/libimobiledevice-devel
+
+IRC:
+	irc://irc.freenode.net#libimobiledevice
+
+Twitter:
+	https://twitter.com/libimobiledev
 
 Credits
 =======
@@ -56,4 +66,4 @@ libimobiledevice is an independent software library and has not been
 authorized, sponsored, or otherwise approved by Apple Inc.
 
 README Updated on:
-	2013-03-18
+	2015-01-28
